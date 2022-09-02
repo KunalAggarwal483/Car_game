@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to car Game 1.0</title>
+
+    <style>
+         
+      *{
+          margin: 0;
+          padding: 0;
+       }
+      
+       .hide{
+           display: none;
+       }
+
+       .main{
+           background-image: url(./IMAGES/city_top.jpg);
+           background-repeat: no-repeat;
+           background-size: 100% 100%;
+           width: 100%;
+           height: 100vh;
+       }
+
+       .car{
+           width: 50px;
+           height: 80px;
+           position: absolute;
+           bottom: 120px;
+           z-index: 1;
+           /* background-color: red; */
+           background-image: url(./IMAGES/car1.png);
+           background-repeat: no-repeat;
+           background-size: 100% 100%;
+        }
+
+        .enemy{
+           width: 50px;
+           height: 80px;
+           position: absolute;
+           /* background-color: red; */
+           bottom: 120px;
+           z-index: 1;
+           background-size: 100% 100%;
+           background-repeat: no-repeat;
+        }
+
+       .coinarray{
+           position: relative;
+           margin: 0 30px;
+       } 
+       
+       .startScreen{
+           position: absolute;
+           left: 50%;
+           top: 50%;
+           transform: translate(-50%,-50%);
+           z-index: 2;
+           cursor: pointer;
+           color: white;
+           background-color: rgb(241, 57, 94);
+           font-size: 20px;
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+           width: 500px;
+           height: 120px;
+           text-align: center;
+           line-height: 1.6;
+           padding: 10px 0;
+           letter-spacing: 0.1em;
+           border: 1px solid #ff6b6b;
+           box-shadow: 0 5px 5px #777;
+
+       }
+
+       .coin{
+           width: 40px;
+           height: 40px;
+           position: absolute;
+           margin: 10px 10px;
+           background-image: url(./IMAGES/coin2.png);
+           background-repeat: no-repeat;
+           background-size: 100% 100%;
+           /* box-shadow: 0 2px 5px 2px yellow;  */
+
+       }
+
+       .game_area{
+           height: 100vh;
+           width: 400px;
+           margin: auto;
+           background-color: #3f3f41;
+           position: relative;
+           overflow: hidden;
+           border-right: 8px dashed white;
+           border-left: 8px dashed white;
+
+          }
+
+          .strip{
+              width: 10px;
+              height: 100px;
+              position: absolute;
+              left: 190px;
+              background-color: #fff;
+          }
+
+          .score{
+              position: absolute;
+              top: 20px;
+              left: 50px;
+              color: white;
+              background-color: rgb(1, 162, 109);
+              padding: 20px;
+              margin: 10px;
+              font-size: 20px;
+              width: 100px;
+              box-shadow: 0 5px 5px #777;
+          }
+
+          .collection{
+              position: absolute;
+              top: 90px;
+              left: 50px;
+              color: white;
+              background-color: rgb(206, 186, 9);
+              padding: 20px;
+              margin: 10px;
+              font-size: 20px;
+              width: 160px;
+              box-shadow: 0 5px 5px #777;
+          }
+
+          
+
+    </style>
+</head>
+<body>
+
+    <div class="main">
+        <div class="score"></div>
+        <div class="collection"></div>
+
+        <div class="startScreen">
+            <p>Click here to start game <br>
+             Press arrow keys to play <br>
+             If you hit another car you would lose</p>
+        </div>
+
+        <div class="game_area">
+        
+        </div>
+    </div>
+
+
+    <script>
+        
+        let scores = document.querySelector('.score');
+        let collection = document.querySelector('.collection');
+        let startscreen = document.querySelector('.startScreen');
+        let gamearea= document.querySelector('.game_area');
+
+        let mySound = new Audio('./Audios/game_coin.wav');
+        
+        startscreen.addEventListener('click', start);  
+
+        let player = {speed:3 , score: 0, collection:0, speed_car:7};
+        let keys = {ArrowUp :false, ArrowDown: false, ArrowRight :false, ArrowLeft :false};
+
+        document.addEventListener('keydown', keyDown);
+        document.addEventListener('keyup', keyUp);
+
+        function keyDown()
+        {
+            event.preventDefault();
+            keys[event.key] = true;
+            console.log(event.key);
+            // console.log(keys);
+        }
+
+        function keyUp()
+        {
+            event.preventDefault();
+            keys[event.key] = false;
+            // console.log(keys);
+        }
+          
+
+        function movelines()
+        {
+           let lines = document.querySelectorAll('.strip');
+        //    console.log(lines);
+
+           lines.forEach(function(item)
+           {
+
+              if(item.y > 670)
+              item.y -= 750;
+
+              item.y += player.speed;
+            //   console.log(item.y);
+             item.style.top = item.y + "px";          
+         })
+           
+        }
+
+        function isCollide(a,b)
+        {
+           let arect = a.getBoundingClientRect();
+           let brect = b.getBoundingClientRect();
+
+           return ((arect.right<brect.left) || (arect.left>brect.right) || (arect.top>brect.bottom) || (arect.bottom < brect.top));
+
+        }
+
+        function endGame()
+        {
+            player.start = false;
+            startscreen.classList.remove('hide');
+
+            startscreen.innerHTML = `GAME OVER <br> You Scored ${player.score} Points and collected ${player.collection} Coins <br> Press Here to RESTART GAME.`
+        }
+
+        function moveEnemy(car)
+        {
+           let enemy = document.querySelectorAll('.enemy');
+           let coins = document.querySelectorAll('.coin');
+           let mypic = ['./IMAGES/ecar1.png', './IMAGES/ecar2.png', './IMAGES/ecar3.png', './IMAGES/ecar4.png'];
+           
+        //    console.log(enemy);
+
+           enemy.forEach(function(item)
+           {
+               if(!isCollide(car,item))
+               {
+                   console.log("BOOM HIT");
+                   endGame();
+               }
+               
+               let pos_car = item.getBoundingClientRect();
+             coins.forEach(function(element) {
+                 
+                let pos = element.getBoundingClientRect();
+                if((pos.right < pos_car.left || pos.left > pos_car.right || pos.top> pos_car.bottom || pos.bottom< pos_car.top) == false)
+                     element.classList.add('hide');
+                
+               })
+
+            
+
+              if(item.y > 700){
+              item.y = -300;
+            //   let value = Math.floor(Math.random()*350);
+
+               let number = Math.floor(Math.random()*4);
+               item.style.backgroundImage = 'url(' + mypic[number] + ')';
+
+              item.style.left = Math.floor(Math.random()*350) + "px";
+              }
+
+              item.y += player.speed;
+            //   console.log(item.y);
+             item.style.top = item.y + "px";          
+         })
+           
+        }
+
+        function moveCoin(car)
+        {
+           let coins = document.querySelectorAll('.coin');
+          
+        //    console.log(enemy);
+
+           coins.forEach(function(item)
+            {
+                  
+               if(!isCollide(car, item)) 
+               {
+                  item.classList.add('hide');
+                  player.collection++;
+                  mySound.play();
+               }
+                 
+
+              if(item.y > 700){
+                  
+                if(item.classList.contains('hide'))
+                item.classList.remove('hide');
+
+               item.y = -200;
+               
+               item.style.left = Math.floor(Math.random()*300+10) + "px";
+              }
+
+              item.y += player.speed;
+            //   console.log(item.y);
+             item.style.top = item.y + "px";          
+         })
+           
+        }
+       
+
+        function gamePlay()
+        {  
+        //    console.log("game started");
+           let car = document.querySelector('.car');
+           let road = gamearea.getBoundingClientRect();
+
+          if(player.start == true)
+          {   
+               
+              
+               movelines();
+               moveEnemy(car);
+               moveCoin(car);
+
+
+              if(keys.ArrowUp && player.y>0) {player.y -= player.speed_car;}
+              if(keys.ArrowDown && player.y<717-80){player.y += player.speed_car;}
+              if(keys.ArrowLeft && player.x > 0) {player.x -= player.speed_car+2;}
+              if(keys.ArrowRight && player.x<350) {player.x += player.speed_car+2;}
+              
+              car.style.top = player.y + "px";
+              car.style.left = player.x + "px";
+
+              window.requestAnimationFrame(gamePlay);
+              scores.innerHTML = "Score: "+player.score++;
+              collection.innerHTML = "Coins Collected: " + player.collection;
+          }
+        }
+
+        function start()
+        {
+            startscreen.classList.add('hide');
+            // gamearea.classList.remove('hide');
+            gamearea.innerHTML = "";
+
+            player.start = true;
+            player.score =0;
+            player.collection = 0;
+            player.speed= 3;
+            player.speed_car= 7;
+            window.requestAnimationFrame(gamePlay);
+
+            setInterval(function(){
+                   player.speed += 0.2;
+                   player.speed_car += 0.2;
+               }, 10000);
+
+    
+
+            for(i=0; i<5; i++)
+            {
+               let strip = document.createElement('div');
+               strip.setAttribute('class', 'strip');
+               gamearea.appendChild(strip);
+
+               strip.y = i*150;
+               strip.style.top = i*150 + "px";
+
+            }
+
+            let car = document.createElement('div');
+            car.setAttribute('class' , 'car');
+            gamearea.appendChild(car);
+
+
+            player.x = car.offsetLeft;
+            player.y  = car.offsetTop;
+
+            // console.log(car.offsetLeft);
+            // console.log(car.offsetTop);
+
+            for(i=0; i<3; i++)
+            {
+               let enemyCar = document.createElement('div');
+               enemyCar.setAttribute('class', 'enemy');
+               gamearea.appendChild(enemyCar);
+
+               enemyCar.y = (i*350)*-1;
+               enemyCar.style.top = enemyCar.y + "px";
+
+               let mypic = ['./IMAGES/ecar1.png', './IMAGES/ecar2.png', './IMAGES/ecar3.png', './IMAGES/ecar4.png'];
+               let number = Math.floor(Math.random()*4);
+               enemyCar.style.backgroundImage = 'url(' + mypic[number] + ')';
+               enemyCar.style.left = Math.floor(Math.random()*350) + "px";
+
+            }
+
+            for(i=0; i<6; i++)
+            {  
+                //  let coinarray = document.createElement('div');
+                //  coinarray.setAttribute('class','coinarray');
+
+                //  let size = Math.floor(Math.random()*6+1);
+                 
+                //  if(size > 4)
+                //  {
+                //      map.set(size, 1);
+                //  }
+
+                //  if(map.size > 0)
+                //    {
+                //        size = Math.floor(Math.random()*6+1);
+                  // }
+                
+                 let coin = document.createElement('div');
+                 coin.setAttribute('class', 'coin');
+
+                 coin.y = (i*200)*-1;
+                 coin.style.top = coin.y + "px";
+                 coin.style.left = Math.floor(Math.random()*300+10) + "px";
+
+                 gamearea.appendChild(coin);
+
+                 
+            //     for(j=0; j<size; j++)
+            //     {
+                
+            //      let coin = document.createElement('div');
+            //      coin.setAttribute('class', 'coin');
+                  
+            //      coin.style.top = j*40 + "px";
+            //      coinarray.appendChild(coin);
+
+            //     }
+
+            //   coinarray.y = (i*300)*-1;
+            //   coinarray.style.top = (i*100) + "px";
+            //   coinarray.style.left = Math.floor(Math.random()*300+10) + "px";
+
+            //   gamearea.appendChild(coinarray);
+
+
+            }
+            
+        }
+
+        
+         
+
+
+
+
+    </script>
+    
+</body>
+</html>
